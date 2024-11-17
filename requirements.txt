@@ -1,3 +1,7 @@
+# Pre-requisite
+wheel
+setuptools
+
 # Environment
 python-dotenv
 
