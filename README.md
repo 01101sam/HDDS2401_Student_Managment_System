@@ -80,7 +80,7 @@ To install and run the student management system, follow these steps:
     - Wait for deployment complete.
     - Once deployed, note down the `serve name` for later use.
     - <img src="img/azure/step_1_3.png" width="600">
-    - GO to `Settings` -> `Server parameters`, set `require_secure_transport` to `OFF`. When done, press `Save`.
+    - Go to `Settings` -> `Server parameters`, set `require_secure_transport` to `OFF`. When done, press `Save`.
     - <img src="img/azure/step_1_5.png" width="600">
     - Go to `Settings` -> `Databases`, add a new database named `smy_db`.
     - <img src="img/azure/step_1_4.png" width="600">
@@ -127,14 +127,14 @@ Inside the virtual machine, follow these steps:
 Clone this repository:
 
 ```bash
-git clone https://github.com/01101sam/HDDS2401_Student_Managment_System
+git clone https://github.com/01101sam/HDDS2401_Student_Managment_System student-management-system
 cd student-management-system
 ```
 
 Create a virtual environment:
 
 ```bash
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
 ```
 
@@ -149,6 +149,7 @@ Update the database connection details in the `.env` file:
 ```bash
 cp .env.example .env
 nano .env
+# or vim .env
 ```
 
 Replace the placeholders with your Azure Database for MySQL connection details.
