@@ -157,7 +157,7 @@ Replace the placeholders with your Azure Database for MySQL connection details.
 Run the application:
 
 ```bash
-sudo python app.py
+sudo venv/bin/python app.py
 ```
 
 The application should now be running on the virtual machine. You can access it by navigating to the public IP address
