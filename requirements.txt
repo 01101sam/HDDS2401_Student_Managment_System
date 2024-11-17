@@ -1,0 +1,14 @@
+# Environment
+python-dotenv
+
+# HTTP Framework
+sanic
+sanic-ext
+contextvars
+
+# HTTP Template
+Jinja2
+
+# ORM
+SQLAlchemy
+aiomysql

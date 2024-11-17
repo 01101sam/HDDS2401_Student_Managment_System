@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="ISO-8859-1">
+    <title>SMY | {{ action_title }}</title>
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+          crossorigin="anonymous">
+</head>
+<body>
+<div class="container">
+    <h1>Student Management System</h1>
+    <hr>
+    <h2>{{ action_title }} Student</h2>
+
+    <form action="/api/upsert" method="POST">
+        <!-- Add hidden form field to handle update -->
+        <input type="hidden" name="id" value="{{ student.id if student else '' }}"/>
+
+        <label for="name">Student Name</label>
+        <input type="text"
+               id="name" name="name"
+               placeholder="Student Name (e.g. CHAN, Tai Man)"
+               class="form-control mb-4 col-4"
+               value="{{ student.name if student else '' }}"
+               required
+        >
+
+        <label for="gender">Gender</label>
+        <select
+                name="gender" id="gender"
+                class="form-control mb-4 col-4"
+                required
+        >
+            <option value="" disabled selected>-Select-</option>
+            <option value="M" {{ 'selected' if student and student.gender == "M" else '' }}>Male</option>
+            <option value="F" {{ 'selected' if student and student.gender == "F" else '' }}>Female</option>
+        </select>
+
+        <label for="birth">Birth</label>
+        <input
+                type="date"
+                id="birth" name="birth"
+                placeholder="Birth"
+                class="form-control mb-4 col-4"
+                value="{{ student.birth if student else None }}"
+                required
+        >
+
+        <label for="study_year">Study Year</label>
+        <input
+                type="number"
+                id="study_year" name="study_year"
+                class="form-control mb-4 col-4"
+                value="{{ student.study_year if student else "2024" }}"
+                min="2020" max="2030"
+                required
+        >
+
+        <label for="class_id">Class ID</label>
+        <select
+                name="class_id" id="class_id"
+                class="form-control mb-4 col-4"
+                required
+        >
+            <option value="" disabled selected>-Select-</option>
+            <option value="A" {{ 'selected' if student and student.class_id == "A" else '' }}>A</option>
+            <option value="B" {{ 'selected' if student and student.class_id == "B" else '' }}>B</option>
+            <option value="C" {{ 'selected' if student and student.class_id == "C" else '' }}>C</option>
+            <option value="D" {{ 'selected' if student and student.class_id == "D" else '' }}>D</option>
+        </select>
+
+        <hr/>
+
+        <button type="submit" class="btn btn-info col-2">{{ action_title }}</button>
+        <button class="btn btn-info col-2" onclick="location.href='/'">Back</button>
+    </form>
+</div>
+</body>
+</html>
