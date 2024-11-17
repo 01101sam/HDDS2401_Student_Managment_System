@@ -1,20 +1,35 @@
 import asyncio
-from sanic import Sanic, Request
+import os
+import base64
+from sanic import Sanic, Request, text
 from sqlalchemy.ext.asyncio import create_async_engine
 from contextvars import ContextVar
 
+from dotenv import load_dotenv
 from sqlalchemy import select, delete, update, insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from models import Student
 
+load_dotenv()
+
+DATABASE_URL = os.getenv('DATABASE_URL')
+HTTP_BASIC_AUTH_USER = os.getenv('HTTP_BASIC_AUTH_USER') or ""
+HTTP_BASIC_AUTH_PWD = os.getenv('HTTP_BASIC_AUTH_PWD') or ""
+
 app = Sanic("SMYApp")
 
-# region ORM Session
-bind = create_async_engine("mysql+aiomysql://root:root@localhost/test", echo=True)
-_session_maker = sessionmaker(bind, AsyncSession, expire_on_commit=False)  # noqa
+# region ORM
+bind = create_async_engine(DATABASE_URL, echo=True)
+_session_maker = sessionmaker(bind, class_=AsyncSession, expire_on_commit=False)  # noqa
 _base_model_session_ctx = ContextVar("session")
+
+Base = declarative_base()
+
+
+# Base.query = _session_maker.query_property()
 
 
 @app.middleware("request")
@@ -30,11 +45,59 @@ async def close_session(request: Request, _):
         await request.ctx.session.close()
 
 
-# endregion ORM Session
+async def init_db():
+    from sqlalchemy import inspect
+    from models import Student
+
+    async with bind.begin() as conn:
+        # Clear out the database
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+
+        # Create student table if not exists
+        if not await conn.run_sync(lambda sync_conn: inspect(sync_conn).has_table(Student.__tablename__)):
+            await conn.run_sync(Student.__table__.create)  # noqa
+
+
+# endregion ORM
+
+# region Basic HTTP Auth
+@app.middleware("request")
+async def basic_auth_middleware(request):
+    if not HTTP_BASIC_AUTH_USER and not HTTP_BASIC_AUTH_PWD:
+        return
+
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        request.ctx.auth_error = True
+        return
+
+    auth_type, auth_value = auth_header.split(" ", 1)
+    if auth_type.lower() != "basic":
+        request.ctx.auth_error = True
+        return
+
+    auth_value = auth_value.strip()
+    auth_value = auth_value.encode("utf-8")
+    auth_value = base64.b64decode(auth_value).decode("utf-8")
+    username, password = auth_value.split(":", 1)
+
+    if username != HTTP_BASIC_AUTH_USER or password != HTTP_BASIC_AUTH_PWD:
+        request.ctx.auth_error = True
+        return
+
+
+@app.middleware("request")
+async def basic_auth_response(request: Request):
+    if hasattr(request.ctx, "auth_error"):
+        return text("Unauthorized", status=401, headers={"WWW-Authenticate": 'Basic realm="Login Required"'})
+
+
+# endregion Basic Auth
 
 @app.get("/")
 @app.ext.template("index.j2")
-async def index(req: Request):
+async def handle_index(req: Request):
     session = req.ctx.session
 
     async with session.begin():
@@ -45,27 +108,31 @@ async def index(req: Request):
 
 
 @app.get("/delete/<key:int>")
-async def delete(req: Request, key: int):
+async def handle_delete(req: Request, key: int):
     session = req.ctx.session
     if not key:
         await req.respond(status=302, headers={"Location": "/"})
         return None
 
     async with session.begin():
-        await session.execute(delete(Student).where(Student.id == key))
+        student = await session.execute(select(Student).where(Student.id == key))
+        student = student.scalar_one_or_none()
+
+        if student:
+            await session.execute(delete(Student).where(Student.id == key))
 
     await req.respond(status=302, headers={"Location": "/"})
 
 
 @app.get("/new")
 @app.ext.template("upsert.j2")
-async def new(_: Request):
+async def handle_new(_: Request):
     return {"action_title": "Add"}
 
 
 @app.get("/update/<key:int>")
 @app.ext.template("upsert.j2")
-async def update(req: Request, key: int):
+async def handle_update(req: Request, key: int):
     session = req.ctx.session
     if not key:
         await req.respond(status=302, headers={"Location": "/"})
@@ -86,13 +153,13 @@ async def update(req: Request, key: int):
 
 
 @app.post("/api/upsert")
-async def upsert(req: Request):
+async def handle_upsert(req: Request):
     form_data = req.form
     record_id = form_data.get("id")
     session = req.ctx.session
     try:
         record_id = int(record_id)
-    except ValueError:
+    except (ValueError, TypeError):
         record_id = None
 
     async with session.begin():
@@ -115,15 +182,13 @@ async def upsert(req: Request):
 
 
 async def main():
-    app.run(
-        host="127.0.0.1",
-        port=8080,
-        debug=True,
-        auto_reload=True,
-        backlog=100,
-        access_log=True,
-        workers=1
-    )
+    global DATABASE_URL
+
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL is not set")
+
+    await init_db()
+    app.run(host="0.0.0.0", port=8080)
 
 
 if __name__ == '__main__':

@@ -53,8 +53,8 @@
                 type="number"
                 id="study_year" name="study_year"
                 class="form-control mb-4 col-4"
-                value="{{ student.study_year if student else "2024" }}"
-                min="2020" max="2030"
+                value="{{ student.study_year if student else "1" }}"
+                min="1" max="6"
                 required
         >
 
@@ -74,8 +74,11 @@
         <hr/>
 
         <button type="submit" class="btn btn-info col-2">{{ action_title }}</button>
-        <button class="btn btn-info col-2" onclick="location.href='/'">Back</button>
     </form>
+
+    <hr/>
+
+    <button class="btn btn-info col-2" onclick="location.href='/'">Back</button>
 </div>
 </body>
 </html>

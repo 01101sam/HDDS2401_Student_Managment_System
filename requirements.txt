@@ -12,3 +12,4 @@ Jinja2
 # ORM
 SQLAlchemy
 aiomysql
+greenlet
