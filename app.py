@@ -188,7 +188,7 @@ async def main():
         raise ValueError("DATABASE_URL is not set")
 
     await init_db()
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=80)
 
 
 if __name__ == '__main__':
